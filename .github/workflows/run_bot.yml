@@ -1,0 +1,31 @@
+name: Bot Draftea - Dupla diaria
+
+on:
+  schedule:
+    - cron: "0 15 * * *"   # 15:00 UTC todos los días
+  workflow_dispatch:        # ejecución manual desde GitHub
+
+permissions:
+  contents: read
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Ejecutar bot
+        run: python bot.py
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
