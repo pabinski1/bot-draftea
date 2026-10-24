@@ -1,0 +1,43 @@
+name: Parlays cada 3 horas
+
+on:
+  schedule:
+    # 15, 18, 21, 00 y 03 UTC = 9:00, 12:00, 15:00, 18:00 y 21:00 hora CDMX
+    - cron: "0 0,3,15,18,21 * * *"
+  workflow_dispatch:        # permite correrlo a mano para probar
+
+permissions:
+  contents: write           # necesario para guardar picks.db
+
+concurrency:
+  group: parlays
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Generar parlays y publicar en Discord
+        run: python daily.py
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DB_PATH: picks.db
+
+      - name: Guardar historial de picks
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add picks.db
+          git diff --cached --quiet || git commit -m "Actualizar historial de picks"
+          git pull --rebase origin main
+          git push
